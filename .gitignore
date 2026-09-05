@@ -10,3 +10,4 @@ ui/.svelte-kit/
 
 # Det færdige SvelteKit-build (Skal ignoreres, da GoReleaser danner det under buildet)
 ui/build/
+backend/cmd/mediaplayer/__debug_bin.exe

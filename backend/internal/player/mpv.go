@@ -37,11 +37,12 @@ func NewMPVClient(socketPath string) *MPVClient {
 		}
 	}
 
-	cmd := exec.Command("mpv", "--input-ipc-server="+socketPath, "--idle")
-	//cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Start(); err != nil {
-		fmt.Printf("Fejl ved start af mpv: %v\n", err)
+	if runtime.GOOS == "windows" {
+		cmd := exec.Command("mpv", "--input-ipc-server="+socketPath, "--idle")
+		cmd.Stderr = os.Stderr
+		if err := cmd.Start(); err != nil {
+			fmt.Printf("Fejl ved start af mpv: %v\n", err)
+		}
 	}
 
 	return &MPVClient{socketPath: socketPath}
