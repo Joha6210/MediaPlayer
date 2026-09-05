@@ -7,6 +7,8 @@ version: 2
 before:
   hooks:
     - go mod tidy
+    - npm install --prefix ui
+    - npm run build --prefix ui
 
 builds:
   - id: mediaplayer-server
@@ -21,14 +23,6 @@ builds:
       - amd64
       - arm64
 
-    # Lokale hooks (Her er 'cmd' og 'dir' fuldt understøttet)
-    hooks:
-      pre:
-        - cmd: npm install
-          dir: ./ui             # Relativ til builds.dir (./backend -> ../ui rammer rigtigt)
-        - cmd: npm run build
-          dir: ./ui
-
 archives:
   - formats: [tar.gz]
     files:
@@ -42,6 +36,30 @@ archives:
     format_overrides:
       - goos: windows
         formats: [zip]
+
+nfpms:
+  - id: mediaplayer
+    package_name: mediaplayer
+    vendor: MediaPlayer
+    maintainer: MediaPlayer maintainers
+    description: Raspberry Pi media player with an embedded web UI
+    license: MIT
+    formats:
+      - deb
+    contents:
+      - src: backend/config/default.yaml
+        dst: /etc/mediaplayer/default.yaml
+        type: config
+      - src: deploy/systemd/mediaplayer-mpv.service
+        dst: /etc/systemd/system/mediaplayer-mpv.service
+      - src: deploy/systemd/mediaplayer-backend.service
+        dst: /etc/systemd/system/mediaplayer-backend.service
+      - src: deploy/systemd/mediaplayer-kiosk.service
+        dst: /etc/systemd/system/mediaplayer-kiosk.service
+      - src: deploy/pipewire/wireplumber-bluetooth.lua.d/51-mediaplayer-policy.lua
+        dst: /etc/wireplumber/wireplumber.conf.d/51-mediaplayer-policy.lua
+    scripts:
+      postinstall: scripts/package-postinstall.sh
 
 checksum:
   name_template: "checksums.txt"
