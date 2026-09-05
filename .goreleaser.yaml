@@ -12,6 +12,7 @@ before:
 
 builds:
   - id: mediaplayer-server
+    binary: mediaplayer
     env:
       - CGO_ENABLED=0
     dir: ./backend               # Kør 'go build' inde fra backend mappen
