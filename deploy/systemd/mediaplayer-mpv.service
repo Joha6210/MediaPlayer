@@ -5,8 +5,8 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=pi
-Group=pi
+User=jensen
+Group=jensen
 ExecStart=/usr/bin/mpv --idle=yes --no-terminal --input-ipc-server=/run/mediaplayer/mpv.sock --audio-device=alsa/plughw:CARD=sndrpihifiberry,DEV=0
 RuntimeDirectory=mediaplayer
 RuntimeDirectoryMode=0755

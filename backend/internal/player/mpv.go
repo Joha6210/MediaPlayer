@@ -2,7 +2,6 @@ package player
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -175,14 +174,8 @@ func (m *MPVClient) command(args ...any) error {
 		return fmt.Errorf("sending mpv command: %w", err)
 	}
 
-	buffer := make([]byte, 1024)
-	n, err := conn.Read(buffer)
-	if err != nil {
-		return fmt.Errorf("reading mpv response: %w", err)
-	}
-
 	var result map[string]any
-	if err := json.Unmarshal(bytes.TrimSpace(buffer[:n]), &result); err != nil {
+	if err := json.NewDecoder(conn).Decode(&result); err != nil {
 		return fmt.Errorf("parsing mpv response: %w", err)
 	}
 

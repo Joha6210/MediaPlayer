@@ -6,8 +6,8 @@ Requires=mediaplayer-mpv.service
 
 [Service]
 Type=simple
-User=pi
-Group=pi
+User=jensen
+Group=jensen
 Environment=MEDIAPLAYER_CONFIG=/etc/mediaplayer/default.yaml
 ExecStart=/usr/bin/mediaplayer
 Restart=always

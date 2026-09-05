@@ -2,6 +2,18 @@
 
 Lightweight Raspberry Pi 5 media player optimized for fast boot and local touchscreen control.
 
+## git cmd
+
+git tag v0.0.1-rc8
+
+git push origin v0.0.1-rc8
+
+##
+Update on rpi
+wget https://github.com/Joha6210/MediaPlayer/releases/download/v0.0.1-rc6/mediaplayer_0.0.1-rc8_linux_arm64.deb
+sudo apt install ./mediaplayer_0.0.1-rc8_linux_arm64.deb
+sudo systemctl daemon-reload
+sudo systemctl restart mediaplayer-mpv mediaplayer-backend
 ## Stack
 
 - Backend: Go
