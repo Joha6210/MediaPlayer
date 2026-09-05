@@ -1,0 +1,22 @@
+:root {
+  --bg-dark: #0b0d19;
+  --neon-cyan: #00f0ff;
+  --neon-glow: rgba(0, 240, 255, 0.4);
+  --glass-panel: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: blur(20px);
+}
+
+/* Glassmorphism panel-effekt brugt i top-bar og bund-kontrol */
+.glass-panel {
+  background: var(--glass-panel);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 1.5rem;
+}
+
+/* Den glødende ringeffekt omkring Play/Pause knappen */
+.neon-glow {
+  box-shadow: 0 0 20px var(--neon-glow), inset 0 0 10px var(--neon-glow);
+}

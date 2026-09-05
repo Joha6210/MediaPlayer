@@ -1,0 +1,6 @@
+bin/
+ui/node_modules/
+ui/.svelte-kit/
+ui/build/
+ui/src/routes/player/+page.svelte
+

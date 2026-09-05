@@ -1,0 +1,63 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Backend: Debug mediaplayer",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}/backend/cmd/mediaplayer",
+      "cwd": "${workspaceFolder}/backend",
+      "env": {
+        "MEDIAPLAYER_CONFIG": "${workspaceFolder}/backend/config/windows-test.yaml"
+      }
+    },
+    {
+      "name": "Backend: Test all packages",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceFolder}/backend",
+      "cwd": "${workspaceFolder}/backend"
+    },
+    {
+      "name": "Backend: Test current package",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${fileDirname}",
+      "cwd": "${workspaceFolder}/backend"
+    },
+    {
+      "name": "UI: Run dev server",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "cmd /cnpm run dev -- --host 127.0.0.1 --port 4173",
+      "cwd": "${workspaceFolder}/ui"
+    },
+    {
+      "name": "UI: Open in Chrome",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "url": "http://127.0.0.1:4173",
+      "webRoot": "${workspaceFolder}/ui/src"
+    },
+    {
+      "name": "PowerShell: Launch Current File",
+      "type": "PowerShell",
+      "request": "launch",
+      "script": "${file}",
+      "args": []
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Run App (Backend + UI + Chrome)",
+      "configurations": [
+        "Backend: Debug mediaplayer",
+        "UI: Run dev server",
+        "UI: Open in Chrome"
+      ]
+    }
+  ]
+}

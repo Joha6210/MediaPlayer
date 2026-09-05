@@ -1,0 +1,18 @@
+[Unit]
+Description=MediaPlayer backend
+After=network-online.target mediaplayer-mpv.service
+Wants=network-online.target
+Requires=mediaplayer-mpv.service
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/opt/mediaplayer
+Environment=MEDIAPLAYER_CONFIG=/opt/mediaplayer/backend/config/default.yaml
+ExecStart=/opt/mediaplayer/bin/mediaplayer-backend
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

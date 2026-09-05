@@ -1,0 +1,17 @@
+[Unit]
+Description=MediaPlayer mpv daemon
+After=network-online.target sound.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+ExecStart=/usr/bin/mpv --idle=yes --no-terminal --input-ipc-server=/run/mediaplayer/mpv.sock --audio-device=alsa/plughw:CARD=sndrpihifiberry,DEV=0
+RuntimeDirectory=mediaplayer
+RuntimeDirectoryMode=0755
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

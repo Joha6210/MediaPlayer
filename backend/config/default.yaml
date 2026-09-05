@@ -1,0 +1,15 @@
+http:
+  listenAddr: ":8090"
+
+mpv:
+  socketPath: "/run/mediaplayer/mpv.sock"
+
+plexamp:
+  baseURL: ""
+  token: ""
+
+sourceDefaults:
+  defaultVolume: 60
+
+runtime:
+  testMode: false

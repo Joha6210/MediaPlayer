@@ -1,0 +1,16 @@
+[Unit]
+Description=MediaPlayer UI preview server
+After=network.target mediaplayer-backend.service
+Requires=mediaplayer-backend.service
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/opt/mediaplayer/ui
+ExecStart=/usr/bin/npm run preview -- --host 127.0.0.1 --port 4173
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

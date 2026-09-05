@@ -1,0 +1,15 @@
+http:
+  listenAddr: ":8090"
+
+mpv:
+  socketPath: "\\\\.\\pipe\\my-mpv-pipe"
+
+plexamp:
+  baseURL: ""
+  token: ""
+
+sourceDefaults:
+  defaultVolume: 60
+
+runtime:
+  testMode: false
