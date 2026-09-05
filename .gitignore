@@ -4,3 +4,5 @@ ui/.svelte-kit/
 ui/build/
 ui/src/routes/player/+page.svelte
 
+# Added by goreleaser init:
+dist/
