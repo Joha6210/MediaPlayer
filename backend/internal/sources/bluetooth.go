@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"strings"
 	"time"
+
+	"github.com/godbus/dbus/v5"
 
 	"mediaplayer/backend/internal/source"
 )
@@ -61,4 +64,55 @@ func (a *bluetoothAdapter) Resolve(ctx context.Context, _ source.SelectRequest) 
 
 func (a *bluetoothAdapter) GetStations() []source.Station {
 	return []source.Station{}
+}
+
+func (a *bluetoothAdapter) ListenMetadata() (<-chan source.Metadata, error) {
+	metadata := make(chan source.Metadata, 4)
+	if a.testMode {
+		return metadata, nil
+	}
+
+	conn, err := dbus.SystemBus()
+	if err != nil {
+		return nil, fmt.Errorf("connecting to system D-Bus: %w", err)
+	}
+	if err := conn.AddMatchSignal(
+		dbus.WithMatchInterface("org.freedesktop.DBus.Properties"),
+		dbus.WithMatchMember("PropertiesChanged"),
+	); err != nil {
+		conn.Close()
+		return nil, fmt.Errorf("subscribing to BlueZ metadata: %w", err)
+	}
+
+	signals := make(chan *dbus.Signal, 16)
+	conn.Signal(signals)
+	go func() {
+		defer close(metadata)
+		defer conn.RemoveSignal(signals)
+		defer conn.Close()
+		for signal := range signals {
+			if signal == nil || !strings.Contains(string(signal.Path), "/player") || len(signal.Body) < 2 {
+				continue
+			}
+			changed, ok := signal.Body[1].(map[string]dbus.Variant)
+			if !ok {
+				continue
+			}
+			item := source.Metadata{}
+			if value, ok := changed["Title"]; ok {
+				item.Title, _ = value.Value().(string)
+			}
+			if value, ok := changed["Artist"]; ok {
+				item.Artist, _ = value.Value().(string)
+			}
+			if value, ok := changed["Album"]; ok {
+				item.Album, _ = value.Value().(string)
+			}
+			if item.Title != "" || item.Artist != "" || item.Album != "" {
+				metadata <- item
+			}
+		}
+	}()
+
+	return metadata, nil
 }

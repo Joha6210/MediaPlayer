@@ -58,8 +58,29 @@ func (m *Manager) startEventListener() {
 
 func (m *Manager) Register(name string, adapter Adapter) {
 	m.mu.Lock()
-	defer m.mu.Unlock()
 	m.adapters[name] = adapter
+	m.mu.Unlock()
+
+	if listener, ok := adapter.(MetadataListener); ok {
+		ch, err := listener.ListenMetadata()
+		if err != nil {
+			log.Printf("Could not start %s metadata listener: %v", name, err)
+			return
+		}
+		go func() {
+			for metadata := range ch {
+				m.mu.Lock()
+				if m.state.ActiveSource == name {
+					m.state.StreamTitle = metadata.Title
+					if metadata.Artist != "" {
+						m.state.StreamTitle = metadata.Artist + " - " + metadata.Title
+					}
+					m.notifyLocked()
+				}
+				m.mu.Unlock()
+			}
+		}()
+	}
 }
 
 func (m *Manager) State() SourceState {

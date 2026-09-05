@@ -49,6 +49,16 @@ type Adapter interface {
 	GetStations() []Station
 }
 
+type Metadata struct {
+	Title  string
+	Artist string
+	Album  string
+}
+
+type MetadataListener interface {
+	ListenMetadata() (<-chan Metadata, error)
+}
+
 type Player interface {
 	Play(url string, volume int, headers map[string]string) error
 	Stop() error
