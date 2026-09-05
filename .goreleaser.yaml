@@ -13,7 +13,7 @@ builds:
     env:
       - CGO_ENABLED=0
     dir: ./backend               # Kør 'go build' inde fra backend mappen
-    main: ./cmd/mediaplayer/main.go   # Sti relativ til 'dir'
+    main: ./cmd/mediaplayer   # Sti relativ til 'dir'
     goos:
       - linux
       - windows
