@@ -5,13 +5,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net"
 	"os"
 	"os/exec"
 	"runtime"
-	"time"
-
-	"github.com/Microsoft/go-winio"
 )
 
 // PlayInfo indeholder de data, dit frontend skal bruge
@@ -49,14 +45,6 @@ func NewMPVClient(socketPath string) *MPVClient {
 	}
 
 	return &MPVClient{socketPath: socketPath}
-}
-
-func dialSocket(path string) (net.Conn, error) {
-	timeout := 2 * time.Second
-	if runtime.GOOS == "windows" {
-		return winio.DialPipe(path, &timeout)
-	}
-	return net.DialTimeout("unix", path, timeout)
 }
 
 func (m *MPVClient) ListenEvents() (<-chan struct {
