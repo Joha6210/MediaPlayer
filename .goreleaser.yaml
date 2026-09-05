@@ -31,6 +31,8 @@ builds:
 
 archives:
   - formats: [tar.gz]
+    files:
+      - backend/config/*.yaml
     name_template: >-
       {{ .ProjectName }}_
       {{- title .Os }}_
