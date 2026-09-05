@@ -13,6 +13,7 @@ import (
 	"mediaplayer/backend/internal/player"
 	"mediaplayer/backend/internal/source"
 	"mediaplayer/backend/internal/sources"
+	projectroot "mediaplayer/root"
 )
 
 func main() {
@@ -41,7 +42,11 @@ func main() {
 	manager.Register(sources.PlexampSource, sources.NewPlexampAdapter(cfg.Plexamp, cfg.Runtime.TestMode))
 	manager.Register(sources.BluetoothSource, sources.NewBluetoothAdapter(cfg.Runtime.TestMode))
 
-	server := api.NewServer(cfg.HTTP.ListenAddr, manager)
+	// Hent det indlejrede SvelteKit-filsystem fra din rod-pakke
+	publicFS := projectroot.GetFrontendFS()
+
+	// Send det videre til api-serveren
+	server := api.NewServer(cfg.HTTP.ListenAddr, manager, publicFS)
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()

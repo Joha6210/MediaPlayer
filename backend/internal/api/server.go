@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -31,7 +33,7 @@ type Server struct {
 	drStations []string
 }
 
-func NewServer(listenAddr string, manager SourceManager) *Server {
+func NewServer(listenAddr string, manager SourceManager, frontendFS http.FileSystem) *Server {
 	s := &Server{
 		manager: manager,
 		upgrader: websocket.Upgrader{
@@ -41,6 +43,7 @@ func NewServer(listenAddr string, manager SourceManager) *Server {
 	}
 
 	mux := http.NewServeMux()
+
 	mux.HandleFunc("/health", s.handleHealth)
 	mux.HandleFunc("/api/state", s.handleState)
 	mux.HandleFunc("/api/source/list", s.listSources)
@@ -49,6 +52,60 @@ func NewServer(listenAddr string, manager SourceManager) *Server {
 	mux.HandleFunc("/api/stations", s.fetchStations)
 	mux.HandleFunc("/ws", s.handleWebSocket)
 
+	// 3. SvelteKit Frontend og SPA Fallback handler
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// Hvis anmodningen starter med /api/ men ikke matchede endpoints ovenfor, giv en 404
+		if strings.HasPrefix(r.URL.Path, "/api/") {
+			http.NotFound(w, r)
+			return
+		}
+
+		cleanedPath := filepath.Clean(r.URL.Path)
+
+		// Tjek om filen eksisterer i SvelteKit-buildet (f.eks. /favicon.png eller js-filer)
+		file, err := frontendFS.Open(r.URL.Path)
+		if err == nil {
+			if err == nil {
+				file.Close()
+
+				// Fiks manglende styling: Gennemtving korrekte MIME-types baseret på filendelse
+				ext := filepath.Ext(cleanedPath)
+				switch ext {
+				case ".css":
+					w.Header().Set("Content-Type", "text/css; charset=utf-8")
+				case ".js":
+					w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
+				case ".svg":
+					w.Header().Set("Content-Type", "image/svg+xml")
+				case ".png":
+					w.Header().Set("Content-Type", "image/png")
+				case ".json":
+					w.Header().Set("Content-Type", "application/json")
+				}
+
+				// Server den fundne statiske fil (CSS, JS, osv.)
+				http.FileServer(frontendFS).ServeHTTP(w, r)
+				return
+			}
+		}
+
+		// Hvis filen ikke findes, server index.html (SPA Fallback til SvelteKit routeren)
+		indexFile, err := frontendFS.Open("index.html")
+		if err != nil {
+			http.Error(w, "Frontend index.html not found", http.StatusInternalServerError)
+			return
+		}
+		defer indexFile.Close()
+
+		stat, err := indexFile.Stat()
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		http.ServeContent(w, r, "index.html", stat.ModTime(), indexFile)
+	})
+
 	s.httpServer = &http.Server{
 		Addr:              listenAddr,
 		Handler:           withCORS(mux),
@@ -56,6 +113,24 @@ func NewServer(listenAddr string, manager SourceManager) *Server {
 	}
 
 	return s
+}
+
+func (s *Server) serveIndexHTML(w http.ResponseWriter, r *http.Request, frontendFS http.FileSystem) {
+	indexFile, err := frontendFS.Open("index.html")
+	if err != nil {
+		http.Error(w, "Frontend index.html not found", http.StatusInternalServerError)
+		return
+	}
+	defer indexFile.Close()
+
+	stat, err := indexFile.Stat()
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	http.ServeContent(w, r, "index.html", stat.ModTime(), indexFile)
 }
 
 func withCORS(next http.Handler) http.Handler {

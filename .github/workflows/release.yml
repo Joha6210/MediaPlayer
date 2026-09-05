@@ -1,0 +1,40 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger kun, når du laver et versions-tag (f.eks. v1.0.0)
+
+permissions:
+  contents: write # Giver GoReleaser lov til at oprette releasen på din GitHub-side
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Henter fuld historik, så GoReleaser kan generere en changelog
+
+      - name: Setup Node.js (SvelteKit Frontend)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './ui/package-lock.json' # Cacher dine node_modules baseret på din låsefil
+
+      - name: Setup Go (Backend Server)
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Leveres automatisk af GitHub til at uploade de færdige filer

@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://goreleaser.com
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj
+
+version: 2
+
+# Globale hooks (Her må kun stå simple tekst-strenge)
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: mediaplayer-server
+    env:
+      - CGO_ENABLED=0
+    dir: ./backend               # Kør 'go build' inde fra backend mappen
+    main: ./cmd/server/main.go   # Sti relativ til 'dir'
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+    # Lokale hooks (Her er 'cmd' og 'dir' fuldt understøttet)
+    hooks:
+      pre:
+        - cmd: npm install
+          dir: ./ui             # Relativ til builds.dir (./backend -> ../ui rammer rigtigt)
+        - cmd: npm run build
+          dir: ./ui
+
+archives:
+  - formats: [tar.gz]
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"

@@ -1,8 +1,12 @@
+# Bygge-filer og binære filer (Skal ignoreres)
 bin/
+dist/
+backend/dist/
+
+# Node afhængigheder og midlertidig cache (Skal ignoreres)
 ui/node_modules/
 ui/.svelte-kit/
-ui/build/
-ui/src/routes/player/+page.svelte
+.svelte-kit/
 
-# Added by goreleaser init:
-dist/
+# Det færdige SvelteKit-build (Skal ignoreres, da GoReleaser danner det under buildet)
+ui/build/
