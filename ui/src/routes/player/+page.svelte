@@ -4,23 +4,25 @@
   import { fly, fade } from 'svelte/transition';
   import { goto } from '$app/navigation';
   import { clock } from '$lib/clock';
+  import CurvedLoop from '$lib/components/CurvedLoop.svelte';
 
   let state = $state({
     activeSource: '',
     label: '',
     playing: false,
     volume: 60,
-    stream_title: '', // Modtager live-tekst ("Kunstner - Sang" eller kanalnavn)
-    paused: false,     // Modtager sand/falsk pause-status fra MPV
-    station: null, // Modtager den aktive station fra MPV
+    stream_title: '',   // Modtager live-tekst ("Kunstner - Sang" eller kanalnavn)
+    paused: false,      // Modtager sand/falsk pause-status fra MPV
+    station: null,      // Modtager den aktive station fra MPV
   }
 
 );
 
   let stations = $state([]);
 
-  let displayTitle = $derived(state.stream_title.replace('/', ' ') || state.label || 'Ingen stream kører');
+  let displayTitle = $derived(state.stream_title.replace('/', ' ') || state.label || 'Vælg kilde for at starte afspilning');
   let displaySubtitle = $derived(state.station?.name ? state.station.name : 'Live Stream');
+  const marqueeThreshold = 40;
 
   let error = '';
   let plexPath = '/audio/:/transcode/universal/start.m3u8';
@@ -106,7 +108,7 @@
   <header class="top-bar">
 
     <button class="source-button button" onclick={sourceSelect} aria-label="Source Selection">
-    <img src="/icons/source-icon.svg" alt="Source Icon" width="24" height="24" />
+    <img src="/icons/source-icon.svg" alt="Source Icon" width="34" height="34" />
     <span class="text-normal source-text">
       <span class="source-label text-synth" >SOURCE</span>
       <span class="source-name">{state.activeSource}</span>
@@ -117,8 +119,8 @@
       <span >{dateStr}<br>{timeStr}</span>
     </div>
     <div style="display: flex; gap: 16px;">
-      <button class="button" onclick={() => {isOpen=true}} aria-label="Playlist"><img src="/icons/playlist.svg" alt="Playlist Icon" width="20" height="20" /></button>
-      <button class="button" aria-label="Settings"><img src="/icons/settings.svg" alt="Settings Icon" width="20" height="20" /></button>
+      <button class="button" onclick={() => {isOpen=true}} aria-label="Playlist"><img src="/icons/playlist.svg" alt="Playlist Icon" width="30" height="30" /></button>
+      <button class="button" aria-label="Settings"><img src="/icons/settings.svg" alt="Settings Icon" width="30" height="30" /></button>
     </div>
   </header>
 
@@ -129,8 +131,20 @@
       </div>
     </div>
     
-    <div class="track-info text-normal">
-      <h1 style="margin-bottom: 0px;">{displayTitle}</h1>
+    <div class="track-info">
+      <h1 style="margin-bottom: 0px;">
+      {#if displayTitle.length > marqueeThreshold}
+        <CurvedLoop
+          class="track-marquee"
+          marqueeText={displayTitle}
+          speed={0.5}
+          curveAmount={0}
+          interactive={false}
+        />
+      {:else}
+        {displayTitle}
+      {/if}
+      </h1>
       <h2 style="margin: 4px 0px 32px 0px;">{displaySubtitle} &#x2022; {artist}</h2>
       <div style="display: flex; flex-direction: row; justify-content: flex-start; gap: 8px; margin-bottom: 16px;">
         <span class="floating-section format-badge text-normal" style="width: fit-content; margin-right: 8px;">{format}</span>
@@ -165,17 +179,17 @@
     </section>
       <section class="bottom-row-bottom-bar">
         <section class="shuffle-repeat">
-          <button class="button" aria-label="Shuffle"><img src="/icons/shuffle.svg" alt="Shuffle Icon" width="20" height="20" /></button>
-          <button class="button" aria-label="Repeat"><img src="/icons/repeat.svg" alt="Repeat Icon" width="20" height="20" /></button>
+          <button class="button" aria-label="Shuffle"><img src="/icons/shuffle.svg" alt="Shuffle Icon" width="30" height="30" /></button>
+          <button class="button" aria-label="Repeat"><img src="/icons/repeat.svg" alt="Repeat Icon" width="30" height="30" /></button>
         </section>
         <section class="playback-controls">
-          <button class="button" aria-label="Previous Track"><img src="/icons/back-play.svg" alt="Previous Icon" width="24" height="24" /></button>
+          <button class="button" aria-label="Previous Track"><img src="/icons/back-play.svg" alt="Previous Icon" width="34" height="34" /></button>
           <button class="button play-button" aria-label={state.playing ? "Pause" : "Play"} onclick={() => state.playing = !state.playing}>
           <img src={state.playing ? "/icons/pause.svg" : "/icons/pause.svg"} alt={state.playing ? "Pause Icon" : "Play Icon"} width="32" height="32" /></button>
-          <button class="button" aria-label="Next Track"><img src="/icons/forward.svg" alt="Next Icon" width="24" height="24" /></button>
+          <button class="button" aria-label="Next Track"><img src="/icons/forward.svg" alt="Next Icon" width="34" height="34" /></button>
         </section>
       <section class="volume-control">
-        <img src="/icons/volume-lower.svg" alt="Volume Icon" width="20" height="20" />
+        <img src="/icons/volume-lower.svg" alt="Volume Icon" width="30" height="30" />
         <input 
         type="range" 
         min="0" 
@@ -183,7 +197,7 @@
         bind:value={state.volume} 
         onchange={onVolumeChange} 
         style="--value: {state.volume}%"/>
-        <img src="/icons/volume-higher.svg" alt="Volume Icon" width="20" height="20" />
+        <img src="/icons/volume-higher.svg" alt="Volume Icon" width="30" height="30" />
       </section>
     </section>
   </footer>
@@ -205,9 +219,9 @@
       >
       <div class="sidebar-panel-top">
         <button class="button"  onclick={() => isOpen = false} aria-label="Close Sidebar">
-          <svg stroke="white" stroke-width="1" fill="white" width="24" height="24"> <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z "/> </svg>
+          <img src="/icons/close.svg" alt="Volume Icon" width="30" height="30" />
         </button>
-        <h2 style="align-self: flex-start">Playlist</h2>
+        <h2 style="align-self: flex-start">Stations</h2>
       </div>
         <div class="sidepanel-content">
           
@@ -303,16 +317,7 @@
   gap: 8px;
   }
 
-  .bottom-bar {
-    align-items: center;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 1rem;
-    border-radius: 24px; 
-    gap: 16px;
-    width: 100%;
-  }
+  
 
   .shuffle-repeat {
     display: flex;
@@ -374,12 +379,12 @@
   }
 
   .player-flex {
-    align-items: left;
     display: flex;
     flex-direction: column;
     gap: 1rem;
     padding-bottom: 20px;
     padding-top: 5px;
+    height: 100%;
   }
 
   .top-bar {
@@ -398,7 +403,17 @@
     border-radius: 24px;  
   }
 
-  
+  .bottom-bar {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 1rem;
+    border-radius: 24px; 
+    gap: 16px;
+    margin-top: auto; 
+    margin-bottom: 5%;
+  }
 
   .source-text {
     display: flex;
@@ -409,6 +424,8 @@
   .track-info {
     display: flex;
     flex-direction: column;
+    flex: .65;
+    min-width: 0;
     margin-right: auto;
     gap: 4px;
     margin-top: 16px;
@@ -424,6 +441,14 @@
     color: #FFFFFF;
     font-weight: bold;
     font-size: 44px;
+  }
+
+  :global(.track-marquee) {
+    font-family: 'Geist', sans-serif;
+    fill: #FFFFFF;
+    font-weight: bold;
+    font-size: 6rem;
+    align-self: center;
   }
 
   h2 {

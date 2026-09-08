@@ -58,9 +58,11 @@ func getDRStations() []source.Station {
 	})
 
 	var filteredStations []source.Station
+	var seen = make(map[string]bool)
 	for _, station := range rawStations {
-		if station.Codec == "MP3" {
+		if station.Codec == "MP3" && !seen[station.Name] {
 			filteredStations = append(filteredStations, station)
+			seen[station.Name] = true
 		}
 	}
 
