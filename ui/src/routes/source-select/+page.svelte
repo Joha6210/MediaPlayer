@@ -44,6 +44,8 @@
     if (!selected) return;
 
     try {
+      let destination = '/';
+
       if (selected.id === 'bluetooth') {
         state = await selectSource({ source: 'bluetooth' });
       } else if (selected.id === 'dr-radio') {
@@ -51,12 +53,13 @@
         state = await selectSource({ source: 'dr-radio', station: defaultStation } );
       } else if (selected.id === 'plexamp') {
         state = await selectSource({ source: 'plexamp', meta: { path: '/audio/:/transcode/universal/start.m3u8' } });
+        destination = '/plexamp';
       } else if (selected.id === 'internet-radio') {
         state = await selectSource({ source: 'internet-radio', url: 'https://example.com/stream.mp3' });
       } else {
         state = await selectSource({ source: selected.id });
       }
-      goto('/'); // Navigate back to player screen on success
+      goto(destination);
     } catch (err) {
       error = err.message;
     }

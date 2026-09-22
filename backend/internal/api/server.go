@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -20,6 +21,10 @@ type SourceManager interface {
 	State() source.SourceState
 	Select(ctx context.Context, req source.SelectRequest) error
 	SetVolume(volume int) error
+	PlayPause(state bool) error
+	NextTrack() error
+	PrevTrack() error
+	CatchUp() error
 	Subscribe() (chan source.SourceState, func())
 	GetAdapters() map[string]source.Adapter
 	GetCurrentAdapter() source.Adapter
@@ -49,6 +54,8 @@ func NewServer(listenAddr string, manager SourceManager, frontendFS http.FileSys
 	mux.HandleFunc("/api/source/list", s.listSources)
 	mux.HandleFunc("/api/source/select", s.handleSelect)
 	mux.HandleFunc("/api/player/volume", s.handleVolume)
+	mux.HandleFunc("/api/player/setState", s.handleStateSet)
+	mux.HandleFunc("/api/player/controls", s.handleControls)
 	mux.HandleFunc("/api/stations", s.fetchStations)
 	mux.HandleFunc("/ws", s.handleWebSocket)
 
@@ -166,6 +173,67 @@ func (s *Server) handleState(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, s.manager.State())
+}
+
+func (s *Server) handleStateSet(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req source.SourceState
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	s.manager.PlayPause(req.Paused)
+
+	writeJSON(w, http.StatusOK, s.manager.State())
+}
+
+func (s *Server) handleControls(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req source.ControlRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	switch req.Action {
+	case "playpause":
+		paused, err := strconv.ParseBool(req.Args1)
+		if err != nil {
+			http.Error(w, "invalid play/pause state", http.StatusBadRequest)
+			return
+		}
+		if err := s.manager.PlayPause(paused); err != nil {
+			http.Error(w, "failed to toggle play/pause", http.StatusInternalServerError)
+			return
+		}
+	case "next":
+		if err := s.manager.NextTrack(); err != nil {
+			http.Error(w, "failed to play next track", http.StatusInternalServerError)
+			return
+		}
+	case "prev":
+		if err := s.manager.PrevTrack(); err != nil {
+			http.Error(w, "failed to play previous track", http.StatusInternalServerError)
+			return
+		}
+	case "catchup":
+		if err := s.manager.CatchUp(); err != nil {
+			http.Error(w, "failed to catch up", http.StatusInternalServerError)
+			return
+		}
+	default:
+		http.Error(w, "invalid action", http.StatusBadRequest)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, "success")
 }
 
 func (s *Server) listSources(w http.ResponseWriter, r *http.Request) {

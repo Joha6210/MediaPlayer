@@ -2,18 +2,17 @@ package sources
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
-	"strings"
 	"time"
-
-	"github.com/godbus/dbus/v5"
 
 	"mediaplayer/backend/internal/source"
 )
 
 type bluetoothAdapter struct {
 	commandRunner commandRunner
+	controller    *bluezController
 	testMode      bool
 }
 
@@ -32,10 +31,14 @@ func (r *execRunner) Run(ctx context.Context, name string, args ...string) error
 }
 
 func NewBluetoothAdapter(testMode bool) source.Adapter {
-	return &bluetoothAdapter{
+	adapter := &bluetoothAdapter{
 		commandRunner: &execRunner{},
 		testMode:      testMode,
 	}
+	if !testMode {
+		adapter.controller = newBluezController()
+	}
+	return adapter
 }
 
 func (a *bluetoothAdapter) Resolve(ctx context.Context, _ source.SelectRequest) (source.PlayRequest, error) {
@@ -66,53 +69,41 @@ func (a *bluetoothAdapter) GetStations() []source.Station {
 	return []source.Station{}
 }
 
-func (a *bluetoothAdapter) ListenMetadata() (<-chan source.Metadata, error) {
-	metadata := make(chan source.Metadata, 4)
-	if a.testMode {
-		return metadata, nil
+func (a *bluetoothAdapter) PlayPause(paused bool) error {
+	if a.controller == nil {
+		return errors.New("bluetooth controller unavailable")
 	}
-
-	conn, err := dbus.SystemBus()
-	if err != nil {
-		return nil, fmt.Errorf("connecting to system D-Bus: %w", err)
-	}
-	if err := conn.AddMatchSignal(
-		dbus.WithMatchInterface("org.freedesktop.DBus.Properties"),
-		dbus.WithMatchMember("PropertiesChanged"),
-	); err != nil {
-		conn.Close()
-		return nil, fmt.Errorf("subscribing to BlueZ metadata: %w", err)
-	}
-
-	signals := make(chan *dbus.Signal, 16)
-	conn.Signal(signals)
-	go func() {
-		defer close(metadata)
-		defer conn.RemoveSignal(signals)
-		defer conn.Close()
-		for signal := range signals {
-			if signal == nil || !strings.Contains(string(signal.Path), "/player") || len(signal.Body) < 2 {
-				continue
-			}
-			changed, ok := signal.Body[1].(map[string]dbus.Variant)
-			if !ok {
-				continue
-			}
-			item := source.Metadata{}
-			if value, ok := changed["Title"]; ok {
-				item.Title, _ = value.Value().(string)
-			}
-			if value, ok := changed["Artist"]; ok {
-				item.Artist, _ = value.Value().(string)
-			}
-			if value, ok := changed["Album"]; ok {
-				item.Album, _ = value.Value().(string)
-			}
-			if item.Title != "" || item.Artist != "" || item.Album != "" {
-				metadata <- item
-			}
-		}
-	}()
-
-	return metadata, nil
+	return a.controller.PlayPause(paused)
 }
+
+func (a *bluetoothAdapter) NextTrack() error {
+	if a.controller == nil {
+		return errors.New("bluetooth controller unavailable")
+	}
+	return a.controller.NextTrack()
+}
+
+func (a *bluetoothAdapter) PrevTrack() error {
+	if a.controller == nil {
+		return errors.New("bluetooth controller unavailable")
+	}
+	return a.controller.PrevTrack()
+}
+
+func (a *bluetoothAdapter) SetVolume(volume int) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	return a.commandRunner.Run(ctx, "wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", fmt.Sprintf("%d%%", volume))
+}
+
+func (a *bluetoothAdapter) ListenEvents() (<-chan source.PlaybackEvent, error) {
+	if a.controller == nil {
+		ch := make(chan source.PlaybackEvent)
+		close(ch)
+		return ch, nil
+	}
+	return a.controller.ListenEvents()
+}
+
+var _ source.Controller = (*bluetoothAdapter)(nil)
+var _ source.VolumeController = (*bluetoothAdapter)(nil)

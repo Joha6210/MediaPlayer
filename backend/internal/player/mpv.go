@@ -151,12 +151,28 @@ func (m *MPVClient) Stop() error {
 	return m.command("stop")
 }
 
-func (m *MPVClient) Pause(paused bool) error {
-	return m.command("set_property", "pause", paused)
+func (m *MPVClient) NextTrack() error {
+	return m.command("playlist-next")
+}
+
+func (m *MPVClient) PrevTrack() error {
+	return m.command("playlist-prev")
+}
+
+func (m *MPVClient) CatchUp() error {
+	return m.command("seek", 99999, "absolute")
+}
+
+func (m *MPVClient) PlayPause(state bool) error {
+	return m.command("set_property", "pause", state)
 }
 
 func (m *MPVClient) SetVolume(volume int) error {
 	return m.command("set_property", "volume", volume)
+}
+
+func (m *MPVClient) Close() error {
+	return m.command("quit")
 }
 
 func (m *MPVClient) command(args ...any) error {

@@ -59,10 +59,35 @@ type MetadataListener interface {
 	ListenMetadata() (<-chan Metadata, error)
 }
 
+type PlaybackEvent struct {
+	Title    string
+	Artist   string
+	Album    string
+	Playing  bool
+	Paused   bool
+	Position int64
+	Duration int64
+}
+
+type Controller interface {
+	PlayPause(paused bool) error
+	NextTrack() error
+	PrevTrack() error
+	ListenEvents() (<-chan PlaybackEvent, error)
+}
+
+type VolumeController interface {
+	SetVolume(volume int) error
+}
+
 type Player interface {
 	Play(url string, volume int, headers map[string]string) error
 	Stop() error
-	Pause(paused bool) error
+	Close() error
+	NextTrack() error
+	PrevTrack() error
+	CatchUp() error
+	PlayPause(state bool) error
 	SetVolume(volume int) error
 	ListenEvents() (<-chan struct {
 		Title  string
@@ -76,8 +101,17 @@ type SourceState struct {
 	Playing       bool    `json:"playing"`
 	Volume        int     `json:"volume"`
 	StreamTitle   string  `json:"stream_title"`
+	Artist        string  `json:"artist,omitempty"`
+	Album         string  `json:"album,omitempty"`
 	Paused        bool    `json:"paused"`
+	Position      int64   `json:"position,omitempty"`
+	Duration      int64   `json:"duration,omitempty"`
 	ActiveStation Station `json:"station,omitempty"`
+}
+
+type ControlRequest struct {
+	Action string `json:"action"`
+	Args1  string `json:"args1,omitempty"`
 }
 
 type SelectRequest struct {

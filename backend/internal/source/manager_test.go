@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 )
 
 type fakePlayer struct {
@@ -23,12 +24,28 @@ func (p *fakePlayer) Stop() error {
 	return nil
 }
 
-func (p *fakePlayer) Pause(_ bool) error {
+func (p *fakePlayer) PlayPause(_ bool) error {
 	return nil
 }
 
 func (p *fakePlayer) SetVolume(v int) error {
 	p.lastVolume = v
+	return nil
+}
+
+func (p *fakePlayer) NextTrack() error {
+	return nil
+}
+
+func (p *fakePlayer) PrevTrack() error {
+	return nil
+}
+
+func (p *fakePlayer) CatchUp() error {
+	return nil
+}
+
+func (p *fakePlayer) Close() error {
 	return nil
 }
 
@@ -42,6 +59,39 @@ func (p *fakePlayer) ListenEvents() (<-chan struct {
 type fakeAdapter struct {
 	playReq PlayRequest
 	err     error
+}
+
+type fakeControllerAdapter struct {
+	fakeAdapter
+	events     chan PlaybackEvent
+	paused     bool
+	nextCalled bool
+	prevCalled bool
+	volume     int
+}
+
+func (a *fakeControllerAdapter) PlayPause(paused bool) error {
+	a.paused = paused
+	return nil
+}
+
+func (a *fakeControllerAdapter) NextTrack() error {
+	a.nextCalled = true
+	return nil
+}
+
+func (a *fakeControllerAdapter) PrevTrack() error {
+	a.prevCalled = true
+	return nil
+}
+
+func (a *fakeControllerAdapter) SetVolume(volume int) error {
+	a.volume = volume
+	return nil
+}
+
+func (a *fakeControllerAdapter) ListenEvents() (<-chan PlaybackEvent, error) {
+	return a.events, nil
 }
 
 func (a *fakeAdapter) Resolve(_ context.Context, _ SelectRequest) (PlayRequest, error) {
@@ -103,6 +153,61 @@ func TestSelectUnknownSource(t *testing.T) {
 	err := m.Select(context.Background(), SelectRequest{Source: "missing"})
 	if err == nil {
 		t.Fatal("expected error")
+	}
+}
+
+func TestBluetoothControllerReceivesControlsAndEvents(t *testing.T) {
+	player := &fakePlayer{}
+	controller := &fakeControllerAdapter{
+		fakeAdapter: fakeAdapter{playReq: PlayRequest{UsePlayer: false, Title: "Bluetooth Sink"}},
+		events:      make(chan PlaybackEvent, 1),
+	}
+	m := NewManager(player, 50)
+	m.Register("bluetooth", controller)
+
+	if err := m.Select(context.Background(), SelectRequest{Source: "bluetooth"}); err != nil {
+		t.Fatalf("select returned error: %v", err)
+	}
+	if err := m.PlayPause(true); err != nil {
+		t.Fatalf("play/pause returned error: %v", err)
+	}
+	if err := m.NextTrack(); err != nil {
+		t.Fatalf("next returned error: %v", err)
+	}
+	if err := m.PrevTrack(); err != nil {
+		t.Fatalf("previous returned error: %v", err)
+	}
+	if err := m.SetVolume(72); err != nil {
+		t.Fatalf("volume returned error: %v", err)
+	}
+
+	controller.events <- PlaybackEvent{
+		Title: "Song", Artist: "Artist", Album: "Album",
+		Playing: true, Position: 12_000_000, Duration: 245_000_000,
+	}
+
+	deadline := time.After(time.Second)
+	for {
+		state := m.State()
+		if state.StreamTitle == "Song" {
+			if state.Artist != "Artist" || state.Album != "Album" || state.Position != 12_000_000 {
+				t.Fatalf("unexpected controller state: %+v", state)
+			}
+			break
+		}
+		select {
+		case <-deadline:
+			t.Fatal("timed out waiting for controller event")
+		default:
+			time.Sleep(time.Millisecond)
+		}
+	}
+
+	if !controller.paused || !controller.nextCalled || !controller.prevCalled || controller.volume != 72 {
+		t.Fatalf("controller did not receive all controls: %+v", controller)
+	}
+	if player.lastVolume != 0 {
+		t.Fatalf("expected mpv volume to remain untouched, got %d", player.lastVolume)
 	}
 }
 

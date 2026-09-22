@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -35,12 +36,19 @@ func main() {
 		log.Printf("Starting backend server...")
 		playbackClient = player.NewMPVClient(cfg.MPV.SocketPath)
 	}
+	defer func() {
+		if err := playbackClient.Close(); err != nil {
+			log.Printf("player shutdown error: %v", err)
+		}
+	}()
 
 	manager := source.NewManager(playbackClient, cfg.SourceDefaults.DefaultVolume)
 	manager.Register(sources.InternetRadioSource, sources.NewInternetAdapter())
 	manager.Register(sources.DRSource, sources.NewDRAdapter(cfg.Runtime.TestMode))
 	manager.Register(sources.PlexampSource, sources.NewPlexampAdapter(cfg.Plexamp, cfg.Runtime.TestMode))
-	manager.Register(sources.BluetoothSource, sources.NewBluetoothAdapter(cfg.Runtime.TestMode))
+	if runtime.GOOS == "linux" {
+		manager.Register(sources.BluetoothSource, sources.NewBluetoothAdapter(cfg.Runtime.TestMode))
+	}
 
 	// Hent det indlejrede SvelteKit-filsystem fra din rod-pakke
 	publicFS := projectroot.GetFrontendFS()

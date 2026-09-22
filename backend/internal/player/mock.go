@@ -42,10 +42,22 @@ func (m *MockPlayer) Stop() error {
 	return nil
 }
 
-func (m *MockPlayer) Pause(paused bool) error {
+func (m *MockPlayer) PlayPause(state bool) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.state.Paused = paused
+	m.state.Paused = state
+	return nil
+}
+
+func (m *MockPlayer) NextTrack() error {
+	return nil
+}
+
+func (m *MockPlayer) PrevTrack() error {
+	return nil
+}
+
+func (m *MockPlayer) CatchUp() error {
 	return nil
 }
 
@@ -65,6 +77,10 @@ func (m *MockPlayer) Snapshot() (MockState, bool) {
 		Paused:  m.state.Paused,
 		Headers: cloneHeaders(m.state.Headers),
 	}, m.playing
+}
+
+func (m *MockPlayer) Close() error {
+	return nil
 }
 
 func (m *MockPlayer) ListenEvents() (<-chan struct {

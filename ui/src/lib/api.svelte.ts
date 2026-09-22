@@ -28,6 +28,30 @@ export async function selectSource(payload: any) {
   return response.json();
 }
 
+export async function playPause(state: boolean) {
+  const response = await fetch(`${API_BASE}/api/player/controls`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'playpause', args1: state.toString() })
+  });
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+  return response.json();
+}
+
+export async function control(action: string) {
+  const response = await fetch(`${API_BASE}/api/player/controls`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action })
+  });
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+  return response.json();
+}
+
 export async function getStations() {
   const response = await fetch(`${API_BASE}/api/stations`, {
     method: 'GET',

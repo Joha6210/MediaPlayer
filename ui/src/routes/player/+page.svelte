@@ -1,5 +1,5 @@
 <script >
-  import { getState, openStateSocket, getStations, setVolume } from '$lib/api.svelte';
+  import { getState, openStateSocket, getStations, setVolume, selectSource, playPause, control } from '$lib/api.svelte';
   import { onDestroy, onMount } from 'svelte';
   import { fly, fade } from 'svelte/transition';
   import { goto } from '$app/navigation';
@@ -12,7 +12,11 @@
     playing: false,
     volume: 60,
     stream_title: '',   // Modtager live-tekst ("Kunstner - Sang" eller kanalnavn)
+    artist: '',
+    album: '',
     paused: false,      // Modtager sand/falsk pause-status fra MPV
+    position: 0,
+    duration: 0,
     station: null,      // Modtager den aktive station fra MPV
   }
 
@@ -20,22 +24,30 @@
 
   let stations = $state([]);
 
-  let displayTitle = $derived(state.stream_title.replace('/', ' ') || state.label || 'Vælg kilde for at starte afspilning');
+  let displayTitle = $derived(state.stream_title?.replace('/', ' ') || state.label || 'Vælg kilde for at starte afspilning');
   let displaySubtitle = $derived(state.station?.name ? state.station.name : 'Live Stream');
   const marqueeThreshold = 40;
 
   let error = '';
   let plexPath = '/audio/:/transcode/universal/start.m3u8';
   let socket;
-  let title = 'Midnight Drive';
-  let artist = 'SYNTHWAVE';
-  let album = 'Synthwave Collection';
+  let artist = $derived(state.artist || '');
+  let album = $derived(state.album || '');
   let format = $derived(
   (state.activeSource === 'dr-radio' || state.activeSource === 'INTERNET') && state.station 
     ? `${state.station?.codec || 'UNKNOWN'} • ${state.station?.bitrate ? state.station?.bitrate + ' KBPS' : ''}`.trim().replace(/•\s*$/, '')
     : 'FLAC 24-BIT 96KHZ'
-); let progress = 40;
+);
+  let progress = $derived(state.duration > 0 ? Math.min(100, (state.position / state.duration) * 100) : 0);
+  let elapsed = $derived(formatTime(state.position));
+  let total = $derived(formatTime(state.duration));
   let drStation = $derived(state.activeSource === 'DR' ? state.label : '');
+
+  function formatTime(microseconds) {
+    const seconds = Math.max(0, Math.floor(Number(microseconds || 0) / 1000000));
+    const minutes = Math.floor(seconds / 60);
+    return `${minutes}:${String(seconds % 60).padStart(2, '0')}`;
+  }
   
 	
   
@@ -54,12 +66,16 @@
   }
 
   async function onStationChange(event) {
+    // 1. Hent UUID-strengen direkte fra den valgte option
     const selectedStationUUID = event.currentTarget.value;
-    const selectedStation = Array.isArray(stations) ? stations.find(station => station.stationuuid === selectedStationUUID) : null;
+    // 2. Find stationen i arrayet ved at matche på stationuuid
+    const selectedStation = Array.isArray(stations) 
+      ? stations.find(station => station.stationuuid === selectedStationUUID) 
+      : null;
+    
     if (selectedStation) {
-      console.log(`Selected station: ${selectedStation}`);
       try {
-        state = await selectSource({ source: 'dr-radio', station: selectedStation});
+        state = await selectSource({ source: 'dr-radio', station: selectedStation });
       } catch (err) {
         error = err.message;
       }
@@ -75,6 +91,30 @@
     }
   }
 
+  async function onPlayPause() {
+    const nextPaused = !state.paused;
+
+    try {
+      await playPause(nextPaused);
+    } catch (err) {
+      error = err instanceof Error ? err.message : 'Unable to change playback state';
+    }
+  }
+
+  async function onControl(action) {
+    var nextAction = action;
+
+    if ((state.activeSource === 'INTERNET' || state.activeSource === 'dr-radio') && nextAction === 'next') {
+      nextAction = 'catchup';
+    }
+
+    try {
+      await control(nextAction);
+    } catch (err) {
+      error = err instanceof Error ? err.message : 'Unable to perform control action';
+    }
+  }
+
   function sourceSelect() {
     goto('/source-select');
   }
@@ -87,6 +127,7 @@
 
     if (state.activeSource === 'INTERNET' || state.activeSource === 'dr-radio') {
       stations = await getStations();
+      console.log('Fetched stations:', stations);
     }
     
 
@@ -145,15 +186,16 @@
         {displayTitle}
       {/if}
       </h1>
-      <h2 style="margin: 4px 0px 32px 0px;">{displaySubtitle} &#x2022; {artist}</h2>
+      <h2 style="margin: 4px 0px 32px 0px;">{displaySubtitle}{artist ? ` • ${artist}` : ''}</h2>
       <div style="display: flex; flex-direction: row; justify-content: flex-start; gap: 8px; margin-bottom: 16px;">
         <span class="floating-section format-badge text-normal" style="width: fit-content; margin-right: 8px;">{format}</span>
       {#if state.activeSource === 'INTERNET' || state.activeSource === 'dr-radio'}
-      <div>
-        <select onchange={onStationChange} bind:value={stations} class="floating-section text-normal" style="width: 80%; padding: 8px 8px; border-radius: 20px; margin-inline: auto;">
-          {#each stations as station (station.stationuuid)}
-            <option class="text-normal" value={station.stationuuid}>{station.name}</option>
-          {/each}
+      <div >
+        <select onchange={onStationChange} class="floating-section text-normal" style="width: 80%; padding: 8px 8px; border-radius: 20px; margin-inline: auto;">
+            <option value="">Vælg en station</option>
+              {#each stations as station (station.stationuuid)}
+                  <option value={station.stationuuid}>{station.name}</option>
+              {/each}
         </select>
       </div>
       {/if}
@@ -166,27 +208,33 @@
   <footer class="floating-section bottom-bar" style="width:80%; ">
     <section class="top-row-bottom-bar">
       <section class="track-progress">
-      <span class="text-normal">0:00</span>
+      <span class="text-normal">{elapsed}</span>
       <input 
         type="range" 
         min="0" 
         max="100" 
-        value="0" 
+        value={progress}
+        disabled={state.duration <= 0}
         style="--value: {progress}% "
       />
-      <span class="text-normal">3:45</span>
+      <span class="text-normal">{total}</span>
     </section>
     </section>
       <section class="bottom-row-bottom-bar">
         <section class="shuffle-repeat">
-          <button class="button" aria-label="Shuffle"><img src="/icons/shuffle.svg" alt="Shuffle Icon" width="30" height="30" /></button>
-          <button class="button" aria-label="Repeat"><img src="/icons/repeat.svg" alt="Repeat Icon" width="30" height="30" /></button>
+          <button class="button" aria-label="Shuffle" onclick={() => onControl('shuffle')}><img src="/icons/shuffle.svg" alt="Shuffle Icon" width="30" height="30" /></button>
+          <button class="button" aria-label="Repeat" onclick={() => onControl('repeat')}><img src="/icons/repeat.svg" alt="Repeat Icon" width="30" height="30" /></button>
         </section>
         <section class="playback-controls">
-          <button class="button" aria-label="Previous Track"><img src="/icons/back-play.svg" alt="Previous Icon" width="34" height="34" /></button>
-          <button class="button play-button" aria-label={state.playing ? "Pause" : "Play"} onclick={() => state.playing = !state.playing}>
-          <img src={state.playing ? "/icons/pause.svg" : "/icons/pause.svg"} alt={state.playing ? "Pause Icon" : "Play Icon"} width="32" height="32" /></button>
-          <button class="button" aria-label="Next Track"><img src="/icons/forward.svg" alt="Next Icon" width="34" height="34" /></button>
+          <button class="button" aria-label="Previous Track" onclick={() => onControl('prev')}><img src="/icons/back-play.svg" alt="Previous Icon" width="34" height="34" /></button>
+          <button class="button play-button" onclick={onPlayPause}>
+            {#if state.paused}
+              <img src="/icons/play.svg" alt="Play Icon" width="34" height="34" />
+            {:else}
+              <img src="/icons/pause.svg" alt="Pause Icon" width="32" height="32" />
+            {/if}
+          </button>
+          <button class="button" aria-label="Next Track" onclick={() => onControl('next')}><img src="/icons/forward.svg" alt="Next Icon" width="34" height="34" /></button>
         </section>
       <section class="volume-control">
         <img src="/icons/volume-lower.svg" alt="Volume Icon" width="30" height="30" />
