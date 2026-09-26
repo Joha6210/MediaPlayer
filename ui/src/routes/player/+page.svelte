@@ -1,5 +1,5 @@
 <script >
-  import { getState, openStateSocket, getStations, setVolume, selectSource, playPause, control } from '$lib/api.svelte';
+  import { getBackendInfo, getState, openStateSocket, getStations, setVolume, selectSource, playPause, control } from '$lib/api.svelte';
   import { onDestroy, onMount } from 'svelte';
   import { fly, fade } from 'svelte/transition';
   import { goto } from '$app/navigation';
@@ -21,6 +21,8 @@
   }
 
 );
+
+  let backendInfo = $state({ version: '' });
 
   let stations = $state([]);
 
@@ -124,6 +126,8 @@
     socket = openStateSocket((nextState) => {
       state = nextState;
     });
+
+    backendInfo = await getBackendInfo();
 
     if (state.activeSource === 'INTERNET' || state.activeSource === 'dr-radio') {
       stations = await getStations();

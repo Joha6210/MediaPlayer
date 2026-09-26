@@ -49,6 +49,7 @@ func NewServer(listenAddr string, manager SourceManager, frontendFS http.FileSys
 
 	mux := http.NewServeMux()
 
+	mux.HandleFunc("/api/info", s.fetchInfo)
 	mux.HandleFunc("/health", s.handleHealth)
 	mux.HandleFunc("/api/state", s.handleState)
 	mux.HandleFunc("/api/source/list", s.listSources)
@@ -161,6 +162,14 @@ func (s *Server) Start() error {
 func (s *Server) Shutdown(ctx context.Context) error {
 	log.Printf("Shutting down server...")
 	return s.httpServer.Shutdown(ctx)
+}
+
+func (s *Server) fetchInfo(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"version": "0.1.0"})
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {

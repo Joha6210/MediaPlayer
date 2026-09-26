@@ -1,5 +1,13 @@
 const API_BASE = 'http://127.0.0.1:8090';
 
+export async function getBackendInfo() {
+  const response = await fetch(`${API_BASE}/api/info`);
+  if (!response.ok) {
+    throw new Error(`Info fetch failed: ${response.status}`);
+  }
+  return response.json();
+}
+
 export async function getState() {
   const response = await fetch(`${API_BASE}/api/state`);
   if (!response.ok) {
