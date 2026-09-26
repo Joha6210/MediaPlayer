@@ -1,5 +1,5 @@
 <script>
-  import { getState, openStateSocket, selectSource, getSources} from '$lib/api.svelte';
+  import { getState, openStateSocket, selectSource, getSources, playPause } from '$lib/api.svelte';
   import { onDestroy, onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { clock } from '$lib/clock';
@@ -39,6 +39,7 @@
 
   // Handle confirming and switching to the currently focused source
   async function confirmSelection() {
+    await playPause(true); // Pause playback before switching
     error = '';
     const selected = sources[currentIndex];
     if (!selected) return;
@@ -59,6 +60,7 @@
       } else {
         state = await selectSource({ source: selected.id });
       }
+      await playPause(false); // Resume playback after switching
       goto(destination);
     } catch (err) {
       error = err.message;

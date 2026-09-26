@@ -14,6 +14,8 @@ apt-get install -y --no-install-recommends \
   bluez \
   bluez-tools \
   mpv \
+  xserver-xorg \
+  xinit \
   chromium-browser \
   jq \
   curl
@@ -46,5 +48,11 @@ AutoEnable=true
 EOF
 
 systemctl enable bluetooth
+
+install -d -m 0755 /etc/X11
+cat >/etc/X11/Xwrapper.config <<'EOF'
+allowed_users=anybody
+needs_root_rights=yes
+EOF
 
 echo "Audio setup complete. Reboot required."

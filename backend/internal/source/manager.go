@@ -51,9 +51,18 @@ func (m *Manager) startEventListener() {
 	go func() {
 		for info := range ch {
 			m.mu.Lock()
+			if _, controlled := m.controllers[m.state.ActiveSource]; controlled {
+				m.mu.Unlock()
+				continue
+			}
 			// Opdater m.state direkte med live-data fra MPV streamen
 			m.state.StreamTitle = info.Title
+			m.state.Artist = ""
+			m.state.Album = ""
 			m.state.Paused = info.Paused
+			m.state.Playing = !info.Paused
+			m.state.Position = 0
+			m.state.Duration = 0
 
 			// Genbrug din eksisterende notify-mekanisme til at skubbe data til frontenden
 			m.notifyLocked()
@@ -247,6 +256,12 @@ func (m *Manager) Select(ctx context.Context, req SelectRequest) error {
 		m.state.Playing = false
 	}
 
+	m.state.StreamTitle = ""
+	m.state.Artist = ""
+	m.state.Album = ""
+	m.state.Paused = false
+	m.state.Position = 0
+	m.state.Duration = 0
 	m.state.ActiveSource = req.Source
 	if event, ok := m.controllerStates[req.Source]; ok {
 		m.state.StreamTitle = event.Title

@@ -13,7 +13,7 @@ git push origin v0.0.1-rc8
 wget https://github.com/Joha6210/MediaPlayer/releases/download/v0.0.1-rc8/mediaplayer_0.0.1-rc8_linux_arm64.deb
 sudo apt install ./mediaplayer_0.0.1-rc8_linux_arm64.deb
 sudo systemctl daemon-reload
-sudo systemctl restart mediaplayer-mpv mediaplayer-backend
+sudo systemctl restart mediaplayer-mpv mediaplayer-backend mediaplayer-kiosk
 
 ## Stack
 
@@ -38,6 +38,9 @@ sudo systemctl restart mediaplayer-mpv mediaplayer-backend
    - `bash scripts/build-backend.sh`
    - `bash scripts/build-ui.sh`
 4. Reboot and use kiosk UI on touchscreen.
+
+The kiosk service starts its own X11 session with Chromium. `scripts/setup-audio.sh`
+installs the required `xserver-xorg` and `xinit` packages.
 
 ## Runtime components
 

@@ -211,6 +211,35 @@ func TestBluetoothControllerReceivesControlsAndEvents(t *testing.T) {
 	}
 }
 
+func TestSelectRadioClearsBluetoothPlaybackState(t *testing.T) {
+	player := &fakePlayer{}
+	controller := &fakeControllerAdapter{
+		fakeAdapter: fakeAdapter{playReq: PlayRequest{UsePlayer: false, Title: "Bluetooth Sink"}},
+		events:      make(chan PlaybackEvent),
+	}
+	m := NewManager(player, 50)
+	m.Register("bluetooth", controller)
+	m.Register("radio", &fakeAdapter{
+		playReq: PlayRequest{UsePlayer: true, URL: "https://example.test/radio"},
+	})
+	m.controllerStates["bluetooth"] = PlaybackEvent{
+		Title: "Bluetooth Song", Artist: "Bluetooth Artist", Album: "Bluetooth Album",
+		Playing: true, Position: 20_000_000, Duration: 200_000_000,
+	}
+
+	if err := m.Select(context.Background(), SelectRequest{Source: "bluetooth"}); err != nil {
+		t.Fatalf("select bluetooth returned error: %v", err)
+	}
+	if err := m.Select(context.Background(), SelectRequest{Source: "radio"}); err != nil {
+		t.Fatalf("select radio returned error: %v", err)
+	}
+
+	state := m.State()
+	if state.ActiveSource != "radio" || state.StreamTitle != "" || state.Artist != "" || state.Album != "" || state.Position != 0 || state.Duration != 0 {
+		t.Fatalf("expected Bluetooth playback state to be cleared, got %+v", state)
+	}
+}
+
 func TestSelectAdapterError(t *testing.T) {
 	player := &fakePlayer{}
 	m := NewManager(player, 50)

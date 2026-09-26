@@ -1,14 +1,15 @@
 [Unit]
 Description=MediaPlayer Chromium kiosk
-After=graphical.target mediaplayer-backend.service
+After=mediaplayer-backend.service
 Requires=mediaplayer-backend.service
 
 [Service]
 Type=simple
 User=jensen
-Environment=DISPLAY=:0
-Environment=XAUTHORITY=/home/jensen/.Xauthority
-ExecStart=/usr/bin/chromium-browser --kiosk --incognito --noerrdialogs --disable-infobars --disable-session-crashed-bubble http://127.0.0.1:8090
+Environment=HOME=/home/jensen
+Environment=DBUS_SESSION_BUS_ADDRESS=
+WorkingDirectory=/home/jensen
+ExecStart=/usr/bin/startx /usr/bin/chromium-browser --kiosk --incognito --noerrdialogs --disable-infobars --disable-session-crashed-bubble --disable-background-networking --disable-component-update http://127.0.0.1:8090 -- :0 vt7 -nolisten tcp
 Restart=always
 RestartSec=2
 

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/godbus/dbus/v5"
 
@@ -225,10 +226,52 @@ func (c *bluezController) ListenEvents() (<-chan source.PlaybackEvent, error) {
 		initial := c.last
 		c.mu.Unlock()
 		c.emit(initial)
+		go c.pollPosition()
 	} else {
 		c.mu.Unlock()
 	}
 	return c.events, nil
+}
+
+func (c *bluezController) pollPosition() {
+	ticker := time.NewTicker(500 * time.Millisecond)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		c.mu.RLock()
+		conn := c.conn
+		path := c.path
+		previous := c.last.Position
+		c.mu.RUnlock()
+		if conn == nil || path == "" {
+			continue
+		}
+
+		var value dbus.Variant
+		call := conn.Object(bluezService, path).Call(
+			propertiesIface+".Get",
+			0,
+			bluezPlayer,
+			"Position",
+		)
+		if err := call.Store(&value); err != nil {
+			continue
+		}
+		position, ok := variantInt64(value)
+		if !ok || position == previous {
+			continue
+		}
+
+		c.mu.Lock()
+		if c.path == path {
+			c.last.Position = position
+			event := c.last
+			c.mu.Unlock()
+			c.emit(event)
+			continue
+		}
+		c.mu.Unlock()
+	}
 }
 
 func eventFromProperties(properties map[string]dbus.Variant, previous source.PlaybackEvent) source.PlaybackEvent {
@@ -250,8 +293,8 @@ func eventFromProperties(properties map[string]dbus.Variant, previous source.Pla
 		}
 	}
 	if value, ok := properties["Position"]; ok {
-		if position, ok := value.Value().(uint32); ok {
-			event.Position = int64(position)
+		if position, ok := variantInt64(value); ok {
+			event.Position = position
 		}
 	}
 	if value, ok := properties["Status"]; ok {
@@ -261,4 +304,19 @@ func eventFromProperties(properties map[string]dbus.Variant, previous source.Pla
 		}
 	}
 	return event
+}
+
+func variantInt64(value dbus.Variant) (int64, bool) {
+	switch number := value.Value().(type) {
+	case uint32:
+		return int64(number), true
+	case uint64:
+		return int64(number), true
+	case int32:
+		return int64(number), true
+	case int64:
+		return number, true
+	default:
+		return 0, false
+	}
 }
