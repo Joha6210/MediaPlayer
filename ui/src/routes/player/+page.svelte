@@ -254,6 +254,10 @@
     </section>
   </footer>
 
+  <div class="backend-info">
+    <span class="text-normal">Backend Version: {backendInfo.version}</span>
+  </div>
+
 
   <!-- SIDE PANEL OVERLAY INTEGRATION -->
     {#if isOpen}
