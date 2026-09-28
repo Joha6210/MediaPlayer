@@ -5,6 +5,7 @@ import (
 )
 
 type Station struct {
+	IsFavorite                 bool        `json:"isfavorite"`
 	Changeuuid                 string      `json:"changeuuid"`
 	Stationuuid                string      `json:"stationuuid"`
 	Serveruuid                 string      `json:"serveruuid"`
@@ -45,8 +46,10 @@ type Station struct {
 }
 
 type Adapter interface {
+	IsRadioAdapter() bool
 	Resolve(ctx context.Context, req SelectRequest) (PlayRequest, error)
 	GetStations() []Station
+	SetFavoriteStation(stationUUID string, isFavorite bool) error
 }
 
 type Metadata struct {

@@ -26,6 +26,10 @@ func (a *internetAdapter) Resolve(_ context.Context, req source.SelectRequest) (
 	}, nil
 }
 
+func (a *internetAdapter) IsRadioAdapter() bool {
+	return true
+}
+
 func (a *internetAdapter) getStationsByCountry(country string) []string {
 	httpReq, err := http.Get(stationsByCountry + country)
 	if err != nil {
@@ -43,4 +47,8 @@ func (a *internetAdapter) getStationsByCountry(country string) []string {
 func (a *internetAdapter) GetStations() []source.Station {
 	a.getStationsByCountry("denmark")
 	return []source.Station{}
+}
+
+func (a *internetAdapter) SetFavoriteStation(stationUUID string, isFavorite bool) error {
+	return nil
 }

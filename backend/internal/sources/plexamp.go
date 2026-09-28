@@ -80,6 +80,14 @@ func (a *plexampAdapter) Resolve(ctx context.Context, req source.SelectRequest) 
 	}, nil
 }
 
+func (a *plexampAdapter) IsRadioAdapter() bool {
+	return false
+}
+
 func (a *plexampAdapter) GetStations() []source.Station {
 	return []source.Station{}
+}
+
+func (a *plexampAdapter) SetFavoriteStation(stationUUID string, isFavorite bool) error {
+	return nil
 }

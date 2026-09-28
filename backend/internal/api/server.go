@@ -58,6 +58,7 @@ func NewServer(listenAddr string, manager SourceManager, frontendFS http.FileSys
 	mux.HandleFunc("/api/player/setState", s.handleStateSet)
 	mux.HandleFunc("/api/player/controls", s.handleControls)
 	mux.HandleFunc("/api/stations", s.fetchStations)
+	mux.HandleFunc("/api/stations/favorite", s.handleFavoriteStation)
 	mux.HandleFunc("/ws", s.handleWebSocket)
 
 	// 3. SvelteKit Frontend og SPA Fallback handler
@@ -279,6 +280,39 @@ func (s *Server) fetchStations(w http.ResponseWriter, r *http.Request) {
 
 	stations := s.manager.GetCurrentAdapter().GetStations()
 	writeJSON(w, http.StatusOK, stations)
+}
+
+func (s *Server) handleFavoriteStation(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		StationUUID string `json:"stationuuid"`
+		IsFavorite  bool   `json:"isfavorite"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.StationUUID == "" {
+		http.Error(w, "stationuuid is required", http.StatusBadRequest)
+		return
+	}
+
+	adapter := s.manager.GetCurrentAdapter()
+
+	if adapter.IsRadioAdapter() == false {
+		http.Error(w, "no station adapter is selected", http.StatusBadGateway)
+		return
+	}
+
+	adapter.SetFavoriteStation(req.StationUUID, req.IsFavorite)
+
+	writeJSON(w, http.StatusOK, map[string]string{"status": "success"})
 }
 
 func (s *Server) handleSelect(w http.ResponseWriter, r *http.Request) {

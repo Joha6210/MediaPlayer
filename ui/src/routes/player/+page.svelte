@@ -1,5 +1,5 @@
 <script >
-  import { getBackendInfo, getState, openStateSocket, getStations, setVolume, selectSource, playPause, control } from '$lib/api.svelte';
+  import { getBackendInfo, getState, openStateSocket, getStations, setVolume, selectSource, playPause, control, setFavoriteStation } from '$lib/api.svelte';
   import { onDestroy, onMount } from 'svelte';
   import { fly, fade } from 'svelte/transition';
   import { goto } from '$app/navigation';
@@ -22,6 +22,8 @@
 
 );
 
+
+
   let backendInfo = $state({ version: '' });
 
   let stations = $state([]);
@@ -43,7 +45,6 @@
   let progress = $derived(state.duration > 0 ? Math.min(100, (state.position / state.duration) * 100) : 0);
   let elapsed = $derived(formatTime(state.position));
   let total = $derived(formatTime(state.duration));
-  let drStation = $derived(state.activeSource === 'DR' ? state.label : '');
 
   function formatTime(microseconds) {
     const seconds = Math.max(0, Math.floor(Number(microseconds || 0) / 1000000));
@@ -61,16 +62,17 @@
     timeZone: 'Europe/Copenhagen' 
   });
 
-  let { isOpen = $bindable(false), children } = $props();
+  let { isOpen = $bindable(false)} = $props();
 
   async function refreshState() {
     state = await getState();
     console.log("Refreshed state: %o", state);
   }
 
-  async function onStationChange(event) {
+  async function onStationChange(st) {
     // 1. Hent UUID-strengen direkte fra den valgte option
-    const selectedStationUUID = event.currentTarget.value;
+    const selectedStationUUID = st.stationuuid;
+    console.log("Selected station UUID:", st);
     // 2. Find stationen i arrayet ved at matche på stationuuid
     const selectedStation = Array.isArray(stations) 
       ? stations.find(station => station.stationuuid === selectedStationUUID) 
@@ -82,6 +84,19 @@
       } catch (err) {
         error = err.message;
       }
+    }
+  }
+
+  async function favoriteStation(station) {
+    //Write to some file or database to save the favorite station
+    try {
+      console.log(`Toggling favorite status for station: ${station}, current status: ${station.isFavorite}`);
+      favoriteStatus = !station.isfavorite;
+      state = await setFavoriteStation(station.stationuuid, favoriteStatus);
+      // Update the stations list to reflect the change
+      stations = await getStations();
+    } catch (err) {
+      error = err.message;
     }
   }
 
@@ -235,7 +250,7 @@
           <button class="button" aria-label="Previous Track" onclick={() => onControl('prev')}><img src="/icons/back-play.svg" alt="Previous Icon" width="34" height="34" /></button>
           <button class="button play-button" onclick={onPlayPause}>
             {#if state.paused}
-              <img src="/icons/play.svg" alt="Play Icon" width="34" height="34" />
+              <img src="/icons/play.svg" alt="Play Icon" width="33" height="33" />
             {:else}
               <img src="/icons/pause.svg" alt="Pause Icon" width="32" height="32" />
             {/if}
@@ -268,13 +283,12 @@
       <div 
         class="backdrop" 
         transition:fade={{ duration: 200 }} 
-        onclick={() => isOpen = false}
-      ></div>
+        onclick={() => isOpen = false}>
+      </div>
 
       <div 
         class="sidebar-panel" 
-        transition:fly={{ x: 400, duration: 300 }}
-      >
+        transition:fly={{ x: 400, duration: 300 }}>
       <div class="sidebar-panel-top">
         <button class="button"  onclick={() => isOpen = false} aria-label="Close Sidebar">
           <img src="/icons/close.svg" alt="Volume Icon" width="30" height="30" />
@@ -282,7 +296,28 @@
         <h2 style="align-self: flex-start">Stations</h2>
       </div>
         <div class="sidepanel-content">
-          
+          <list>
+            {#each stations as station (station.stationuuid)}
+              <li class="button" style="margin-bottom: 8px; width: 90%; justify-content: space-between; display: flex; align-items: center;">
+                <button 
+                  class="button" 
+                  style="border: none; background: none; justify-content: space-between; width: 80%; padding: 8px 8px; border-radius: 20px;" 
+                  onclick={() => {
+                    state = onStationChange({ station: { stationuuid: station.stationuuid, isFavorite: station.isFavorite } });
+                    isOpen = false;
+                  }}>
+                  {station.name}
+                  </button>
+                  <button class="button" onclick={() => favoriteStation(station.stationuuid)} aria-label="Favorite Station">
+                    {#if station.isFavorite === true}
+                      <img src="/icons/star-filled.svg" alt="Favorite Icon" width="20" height="20" />
+                    {:else}
+                      <img src="/icons/star.svg" alt="Favorite Icon" width="20" height="20" />
+                    {/if}   
+                  </button>
+              </li>
+            {/each}
+            </list>
         </div>
       </div>
     {/if}

@@ -95,6 +95,18 @@ export async function setVolume(volume: number) {
   return response.json();
 }
 
+export async function setFavoriteStation(stationuuid: string, isFavorite: boolean) {
+  const response = await fetch(`${API_BASE}/api/stations/favorite`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ stationuuid, isFavorite })
+  });
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+  return response.json();
+}
+
 export function openStateSocket(onState: (state: any) => void) {
   const ws = new WebSocket(WS_URL);
   ws.onmessage = (event) => {

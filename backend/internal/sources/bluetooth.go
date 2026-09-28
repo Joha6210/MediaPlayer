@@ -65,6 +65,10 @@ func (a *bluetoothAdapter) Resolve(ctx context.Context, _ source.SelectRequest) 
 	}, nil
 }
 
+func (a *bluetoothAdapter) IsRadioAdapter() bool {
+	return false
+}
+
 func (a *bluetoothAdapter) GetStations() []source.Station {
 	return []source.Station{}
 }
@@ -103,6 +107,10 @@ func (a *bluetoothAdapter) ListenEvents() (<-chan source.PlaybackEvent, error) {
 		return ch, nil
 	}
 	return a.controller.ListenEvents()
+}
+
+func (a *bluetoothAdapter) SetFavoriteStation(stationUUID string, isFavorite bool) error {
+	return nil
 }
 
 var _ source.Controller = (*bluetoothAdapter)(nil)

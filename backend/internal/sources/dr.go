@@ -34,10 +34,14 @@ func NewDRAdapter(testMode bool) source.Adapter {
 	}
 }
 
+func (a *drAdapter) IsRadioAdapter() bool {
+	return true
+}
+
 func mapStations(stations []source.Station) map[string]source.Station {
 	m := make(map[string]source.Station)
 	for _, s := range stations {
-		m[s.Name] = s
+		m[s.Stationuuid] = s
 	}
 	return m
 }
@@ -75,7 +79,7 @@ func (a *drAdapter) GetStations() []source.Station {
 
 func (a *drAdapter) Resolve(ctx context.Context, req source.SelectRequest) (source.PlayRequest, error) {
 
-	station := req.Station.Name
+	station := req.Station.Stationuuid
 
 	if _, exists := a.drStations[station]; !exists {
 		return source.PlayRequest{}, errors.New("dr-radio station not found")
@@ -112,4 +116,15 @@ func (a *drAdapter) Resolve(ctx context.Context, req source.SelectRequest) (sour
 		Title:     "DR " + strings.ToUpper(station),
 		UsePlayer: true,
 	}, nil
+}
+
+func (a *drAdapter) SetFavoriteStation(stationUUID string, isFavorite bool) error {
+	station, exists := a.drStations[stationUUID]
+	if !exists {
+		return errors.New("dr-radio station not found")
+	}
+
+	station.IsFavorite = isFavorite
+	a.drStations[stationUUID] = station
+	return nil
 }

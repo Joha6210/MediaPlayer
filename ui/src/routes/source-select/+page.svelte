@@ -1,5 +1,5 @@
 <script>
-  import { getState, openStateSocket, selectSource, getSources, playPause } from '$lib/api.svelte';
+  import { getState, openStateSocket, selectSource, getSources, playPause, setFavoriteStation } from '$lib/api.svelte';
   import { onDestroy, onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { clock } from '$lib/clock';
@@ -66,21 +66,7 @@
       error = err.message;
     }
   }
-
-    async function switchInternet() {
-    error = '';
-    try {
-      state = await selectSource({
-        source: 'internet-radio',
-        title: 'Internet Radio',
-        url: radioUrl
-      });
-    } catch (err) {
-      error = err.message;
-    }
-  }
-
-  
+ 
 
   function nextSource() {
     if (sources.length === 0) return;

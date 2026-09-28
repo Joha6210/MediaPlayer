@@ -70,6 +70,14 @@ type fakeControllerAdapter struct {
 	volume     int
 }
 
+func (a *fakeControllerAdapter) IsRadioAdapter() bool {
+	return false
+}
+
+func (a *fakeControllerAdapter) SetFavoriteStation(stationUUID string, isFavorite bool) error {
+	return nil
+}
+
 func (a *fakeControllerAdapter) PlayPause(paused bool) error {
 	a.paused = paused
 	return nil
@@ -101,8 +109,16 @@ func (a *fakeAdapter) Resolve(_ context.Context, _ SelectRequest) (PlayRequest, 
 	return a.playReq, nil
 }
 
+func (a *fakeAdapter) SetFavoriteStation(_ string, _ bool) error {
+	return nil
+}
+
 func (a *fakeAdapter) GetStations() []Station {
 	return []Station{}
+}
+
+func (a *fakeAdapter) IsRadioAdapter() bool {
+	return false
 }
 
 func TestSelectPlaybackSource(t *testing.T) {
