@@ -170,7 +170,7 @@ func (s *Server) fetchInfo(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"version": "0.1.0"})
+	writeJSON(w, http.StatusOK, map[string]string{"version": "0.1.1"})
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
