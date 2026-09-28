@@ -65,6 +65,7 @@
 
   async function refreshState() {
     state = await getState();
+    console.log("Refreshed state: %o", state);
   }
 
   async function onStationChange(event) {
@@ -129,9 +130,10 @@
 
     backendInfo = await getBackendInfo();
 
+    console.log('Fetched backend info:', backendInfo);
+
     if (state.activeSource === 'INTERNET' || state.activeSource === 'dr-radio') {
       stations = await getStations();
-      console.log('Fetched stations:', stations);
     }
     
 

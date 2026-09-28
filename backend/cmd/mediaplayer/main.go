@@ -42,6 +42,8 @@ func main() {
 		}
 	}()
 
+	time.Sleep(10 * time.Second) // Vent lidt for at sikre, at mpv er startet, før vi fortsætter
+
 	manager := source.NewManager(playbackClient, cfg.SourceDefaults.DefaultVolume)
 	manager.Register(sources.InternetRadioSource, sources.NewInternetAdapter())
 	manager.Register(sources.DRSource, sources.NewDRAdapter(cfg.Runtime.TestMode))

@@ -9,7 +9,9 @@ User=jensen
 Environment=HOME=/home/jensen
 Environment=DBUS_SESSION_BUS_ADDRESS=
 WorkingDirectory=/home/jensen
+ExecStartPre=/bin/sh -c 'lock=/tmp/.X0-lock; if [ -f "$lock" ] && ! kill -0 "$(cat "$lock" 2>/dev/null)" 2>/dev/null; then rm -f "$lock"; fi'
 ExecStart=/usr/bin/startx /usr/bin/chromium-browser --kiosk --incognito --noerrdialogs --disable-infobars --disable-session-crashed-bubble --disable-background-networking --disable-component-update http://127.0.0.1:8090 -- :0 vt7 -nolisten tcp
+KillMode=control-group
 Restart=always
 RestartSec=2
 

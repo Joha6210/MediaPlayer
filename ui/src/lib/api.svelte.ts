@@ -1,4 +1,16 @@
 const API_BASE = 'http://127.0.0.1:8090';
+const WS_URL = (() => {
+  const apiUrl = new URL('/ws', API_BASE);
+  const protocol =
+    typeof window !== 'undefined' && window.location.protocol === 'https:'
+      ? 'wss:'
+      : apiUrl.protocol === 'https:'
+        ? 'wss:'
+        : 'ws:';
+
+  apiUrl.protocol = protocol;
+  return apiUrl.toString();
+})();
 
 export async function getBackendInfo() {
   const response = await fetch(`${API_BASE}/api/info`);
@@ -84,7 +96,7 @@ export async function setVolume(volume: number) {
 }
 
 export function openStateSocket(onState: (state: any) => void) {
-  const ws = new WebSocket('ws://127.0.0.1:8090/ws');
+  const ws = new WebSocket(WS_URL);
   ws.onmessage = (event) => {
     const data = JSON.parse(event.data);
     onState(data);

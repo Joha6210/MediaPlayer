@@ -347,9 +347,13 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	stateCh, unsubscribe := s.manager.Subscribe()
 	defer unsubscribe()
 
+	fmt.Println("WebSocket connection established")
+
 	for state := range stateCh {
 		if err := conn.WriteJSON(state); err != nil {
 			return
+		} else {
+			fmt.Println("Sent state update over WebSocket:", state)
 		}
 	}
 }

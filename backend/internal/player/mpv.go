@@ -126,6 +126,7 @@ func (m *MPVClient) ListenEvents() (<-chan struct {
 
 				// Hvis status ændrede sig, sender vi den nye PlayInfo ud på kanalen
 				if updated {
+					fmt.Println("Sending updated PlayInfo:", currentStatus)
 					outChan <- currentStatus
 				}
 			}

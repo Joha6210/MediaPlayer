@@ -12,3 +12,4 @@ ui/.svelte-kit/
 ui/build/
 backend/cmd/mediaplayer/__debug_bin.exe
 backend/cmd/mediaplayer/mediaplayer.exe
+backend/cmd/mediaplayer/__debug_bin.exe*
