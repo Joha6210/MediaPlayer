@@ -386,8 +386,6 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	for state := range stateCh {
 		if err := conn.WriteJSON(state); err != nil {
 			return
-		} else {
-			fmt.Println("Sent state update over WebSocket:", state)
 		}
 	}
 }
