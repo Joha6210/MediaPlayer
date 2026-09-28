@@ -303,7 +303,7 @@
                   class="button" 
                   style="border: none; background: none; justify-content: space-between; width: 80%; padding: 8px 8px; border-radius: 20px;" 
                   onclick={() => {
-                    state = onStationChange({ station: { stationuuid: station.stationuuid, isFavorite: station.isFavorite } });
+                    state = onStationChange({ stationuuid: station.stationuuid });
                     isOpen = false;
                   }}>
                   {station.name}
