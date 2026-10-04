@@ -26,6 +26,10 @@ func InitDb(dbFile string) (*Database, error) {
 }
 
 // Should only run once at first startup
-func (*Database) NewTable(name string) error {
+func (db *Database) NewTable(name string) error {
 	return errors.New("Not implemented yet")
+}
+
+func (db *Database) Close() {
+	db.database.Close()
 }
