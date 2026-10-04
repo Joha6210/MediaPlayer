@@ -95,11 +95,11 @@ export async function setVolume(volume: number) {
   return response.json();
 }
 
-export async function setFavoriteStation(stationuuid: string, isFavorite: boolean) {
+export async function setFavoriteStation(stationuuid: string) {
   const response = await fetch(`${API_BASE}/api/stations/favorite`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ stationuuid, isFavorite })
+    body: JSON.stringify({ stationuuid })
   });
   if (!response.ok) {
     throw new Error(await response.text());

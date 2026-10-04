@@ -74,8 +74,12 @@ func (a *fakeControllerAdapter) IsRadioAdapter() bool {
 	return false
 }
 
-func (a *fakeControllerAdapter) SetFavoriteStation(stationUUID string, isFavorite bool) error {
+func (a *fakeControllerAdapter) SetFavoriteStation(stationUUID string) error {
 	return nil
+}
+
+func (a *fakeControllerAdapter) DefaultStation() Station {
+	return Station{}
 }
 
 func (a *fakeControllerAdapter) PlayPause(paused bool) error {
@@ -109,12 +113,16 @@ func (a *fakeAdapter) Resolve(_ context.Context, _ SelectRequest) (PlayRequest, 
 	return a.playReq, nil
 }
 
-func (a *fakeAdapter) SetFavoriteStation(_ string, _ bool) error {
+func (a *fakeAdapter) SetFavoriteStation(_ string) error {
 	return nil
 }
 
-func (a *fakeAdapter) GetStations() []Station {
-	return []Station{}
+func (a *fakeAdapter) GetStations() map[string]Station {
+	return map[string]Station{}
+}
+
+func (a *fakeAdapter) DefaultStation() Station {
+	return Station{}
 }
 
 func (a *fakeAdapter) IsRadioAdapter() bool {

@@ -17,6 +17,7 @@ type plexampAdapter struct {
 	token      string
 	httpClient *http.Client
 	testMode   bool
+	defStation source.Station
 }
 
 func NewPlexampAdapter(cfg config.PlexampConfig, testMode bool) source.Adapter {
@@ -84,10 +85,14 @@ func (a *plexampAdapter) IsRadioAdapter() bool {
 	return false
 }
 
-func (a *plexampAdapter) GetStations() []source.Station {
-	return []source.Station{}
+func (a *plexampAdapter) GetStations() map[string]source.Station {
+	return map[string]source.Station{}
 }
 
-func (a *plexampAdapter) SetFavoriteStation(stationUUID string, isFavorite bool) error {
+func (a *plexampAdapter) SetFavoriteStation(stationUUID string) error {
 	return nil
+}
+
+func (a *plexampAdapter) DefaultStation() source.Station {
+	return a.defStation
 }

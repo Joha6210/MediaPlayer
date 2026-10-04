@@ -233,6 +233,11 @@ func (m *Manager) Select(ctx context.Context, req SelectRequest) error {
 
 	m.currAdapter = adapter
 
+	//Set default station for new source if available
+	if req.Station.Stationuuid == "" {
+		req.Station = adapter.DefaultStation()
+	}
+
 	playReq, err := adapter.Resolve(ctx, req)
 	if err != nil {
 		return err

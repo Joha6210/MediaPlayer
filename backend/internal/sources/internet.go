@@ -3,27 +3,29 @@ package sources
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"mediaplayer/backend/internal/source"
 	"net/http"
 )
 
-type internetAdapter struct{}
+type internetAdapter struct {
+	defStation source.Station
+}
 
 func NewInternetAdapter() source.Adapter {
 	return &internetAdapter{}
 }
 
 func (a *internetAdapter) Resolve(_ context.Context, req source.SelectRequest) (source.PlayRequest, error) {
-	if req.Station.URL == "" {
+	/*if req.Station.URL == "" {
 		return source.PlayRequest{}, errors.New("internet radio requires url")
 	}
 	return source.PlayRequest{
 		URL:       req.Station.URL,
 		Title:     req.Station.Name,
 		UsePlayer: true,
-	}, nil
+	}, nil*/
+	return source.PlayRequest{}, nil
 }
 
 func (a *internetAdapter) IsRadioAdapter() bool {
@@ -44,11 +46,15 @@ func (a *internetAdapter) getStationsByCountry(country string) []string {
 	return []string{}
 }
 
-func (a *internetAdapter) GetStations() []source.Station {
+func (a *internetAdapter) GetStations() map[string]source.Station {
 	a.getStationsByCountry("denmark")
-	return []source.Station{}
+	return map[string]source.Station{}
 }
 
-func (a *internetAdapter) SetFavoriteStation(stationUUID string, isFavorite bool) error {
+func (a *internetAdapter) SetFavoriteStation(stationUUID string) error {
 	return nil
+}
+
+func (a *internetAdapter) DefaultStation() source.Station {
+	return a.defStation
 }

@@ -278,8 +278,19 @@ func (s *Server) fetchStations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stations := s.manager.GetCurrentAdapter().GetStations()
-	writeJSON(w, http.StatusOK, stations)
+	adapter := s.manager.GetCurrentAdapter()
+	if adapter == nil {
+		http.Error(w, "no station adapter is selected", http.StatusBadGateway)
+		return
+	}
+
+	stations := adapter.GetStations()
+
+	arr := make([]source.Station, 0, len(stations))
+	for _, station := range stations {
+		arr = append(arr, station)
+	}
+	writeJSON(w, http.StatusOK, arr)
 }
 
 func (s *Server) handleFavoriteStation(w http.ResponseWriter, r *http.Request) {
@@ -290,7 +301,6 @@ func (s *Server) handleFavoriteStation(w http.ResponseWriter, r *http.Request) {
 
 	var req struct {
 		StationUUID string `json:"stationuuid"`
-		IsFavorite  bool   `json:"isfavorite"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -305,12 +315,15 @@ func (s *Server) handleFavoriteStation(w http.ResponseWriter, r *http.Request) {
 
 	adapter := s.manager.GetCurrentAdapter()
 
-	if adapter.IsRadioAdapter() == false {
+	if adapter == nil || !adapter.IsRadioAdapter() {
 		http.Error(w, "no station adapter is selected", http.StatusBadGateway)
 		return
 	}
 
-	adapter.SetFavoriteStation(req.StationUUID, req.IsFavorite)
+	if err := adapter.SetFavoriteStation(req.StationUUID); err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
 
 	writeJSON(w, http.StatusOK, map[string]string{"status": "success"})
 }

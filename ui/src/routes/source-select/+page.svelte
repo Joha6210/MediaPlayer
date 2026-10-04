@@ -50,8 +50,8 @@
       if (selected.id === 'bluetooth') {
         state = await selectSource({ source: 'bluetooth' });
       } else if (selected.id === 'dr-radio') {
-        const defaultStation = selected.data?.stations?.[3] || 'dr-p3';
-        state = await selectSource({ source: 'dr-radio', station: defaultStation } );
+        const defaultStation = selected.data?.stations?.[3];
+        state = await selectSource({ source: 'dr-radio', station: defaultStation });
       } else if (selected.id === 'plexamp') {
         state = await selectSource({ source: 'plexamp', meta: { path: '/audio/:/transcode/universal/start.m3u8' } });
         destination = '/plexamp';

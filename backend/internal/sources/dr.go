@@ -24,13 +24,18 @@ type drAdapter struct {
 	httpClient *http.Client
 	testMode   bool
 	drStations map[string]source.Station
+	defStation source.Station
 }
 
 func NewDRAdapter(testMode bool) source.Adapter {
+
+	stations := getDRStations()
+
 	return &drAdapter{
 		httpClient: &http.Client{Timeout: 8 * time.Second},
 		testMode:   testMode,
-		drStations: mapStations(getDRStations()),
+		drStations: mapStations(stations),
+		defStation: stations[0],
 	}
 }
 
@@ -73,8 +78,19 @@ func getDRStations() []source.Station {
 	return filteredStations
 }
 
-func (a *drAdapter) GetStations() []source.Station {
-	return getDRStations()
+func (a *drAdapter) GetStations() map[string]source.Station {
+	if len(a.drStations) > 0 {
+		stations := mapStations(getDRStations())
+		for stationUUID, station := range stations {
+			if previous, exists := a.drStations[stationUUID]; exists {
+				station.IsFavorite = previous.IsFavorite
+				stations[stationUUID] = station
+			}
+		}
+		a.drStations = stations
+		return a.drStations
+	}
+	return a.drStations
 }
 
 func (a *drAdapter) Resolve(ctx context.Context, req source.SelectRequest) (source.PlayRequest, error) {
@@ -118,13 +134,16 @@ func (a *drAdapter) Resolve(ctx context.Context, req source.SelectRequest) (sour
 	}, nil
 }
 
-func (a *drAdapter) SetFavoriteStation(stationUUID string, isFavorite bool) error {
+func (a *drAdapter) SetFavoriteStation(stationUUID string) error {
 	station, exists := a.drStations[stationUUID]
 	if !exists {
 		return errors.New("dr-radio station not found")
 	}
-
-	station.IsFavorite = isFavorite
+	station.IsFavorite = !station.IsFavorite
 	a.drStations[stationUUID] = station
 	return nil
+}
+
+func (a *drAdapter) DefaultStation() source.Station {
+	return a.defStation
 }

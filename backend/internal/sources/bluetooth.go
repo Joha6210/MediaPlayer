@@ -69,8 +69,8 @@ func (a *bluetoothAdapter) IsRadioAdapter() bool {
 	return false
 }
 
-func (a *bluetoothAdapter) GetStations() []source.Station {
-	return []source.Station{}
+func (a *bluetoothAdapter) GetStations() map[string]source.Station {
+	return map[string]source.Station{}
 }
 
 func (a *bluetoothAdapter) PlayPause(paused bool) error {
@@ -109,8 +109,12 @@ func (a *bluetoothAdapter) ListenEvents() (<-chan source.PlaybackEvent, error) {
 	return a.controller.ListenEvents()
 }
 
-func (a *bluetoothAdapter) SetFavoriteStation(stationUUID string, isFavorite bool) error {
+func (a *bluetoothAdapter) SetFavoriteStation(stationUUID string) error {
 	return nil
+}
+
+func (a *bluetoothAdapter) DefaultStation() source.Station {
+	return source.Station{}
 }
 
 var _ source.Controller = (*bluetoothAdapter)(nil)

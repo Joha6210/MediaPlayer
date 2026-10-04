@@ -27,6 +27,9 @@
   let backendInfo = $state({ version: '' });
 
   let stations = $state([]);
+  let sortedStations = $derived(
+    [...stations].sort((a, b) => Number(b.isFavorite === true) - Number(a.isFavorite === true))
+  );
 
   let displayTitle = $derived(state.stream_title?.replace('/', ' ') || state.label || 'Vælg kilde for at starte afspilning');
   let displaySubtitle = $derived(state.station?.name ? state.station.name : 'Live Stream');
@@ -87,12 +90,13 @@
     }
   }
 
-  async function favoriteStation(station) {
-    //Write to some file or database to save the favorite station
+  async function favoriteStation(st) {
     try {
-      console.log(`Toggling favorite status for station: ${station}, current status: ${station.isFavorite}`);
-      favoriteStatus = !station.isfavorite;
-      state = await setFavoriteStation(station.stationuuid, favoriteStatus);
+      const selectedStation = Array.isArray(stations) 
+      ? stations.find(station => station.stationuuid === st) 
+      : null;
+      console.log(`Toggling favorite status for station: ${st}`);
+      await setFavoriteStation(selectedStation.stationuuid);
       // Update the stations list to reflect the change
       stations = await getStations();
     } catch (err) {
@@ -149,6 +153,7 @@
 
     if (state.activeSource === 'INTERNET' || state.activeSource === 'dr-radio') {
       stations = await getStations();
+      console.log(stations);
     }
     
 
@@ -210,16 +215,16 @@
       <h2 style="margin: 4px 0px 32px 0px;">{displaySubtitle}{artist ? ` • ${artist}` : ''}</h2>
       <div style="display: flex; flex-direction: row; justify-content: flex-start; gap: 8px; margin-bottom: 16px;">
         <span class="floating-section format-badge text-normal" style="width: fit-content; margin-right: 8px;">{format}</span>
-      {#if state.activeSource === 'INTERNET' || state.activeSource === 'dr-radio'}
+      <!--{#if state.activeSource === 'INTERNET' || state.activeSource === 'dr-radio'}
       <div >
         <select onchange={onStationChange} class="floating-section text-normal" style="width: 80%; padding: 8px 8px; border-radius: 20px; margin-inline: auto;">
             <option value="">Vælg en station</option>
-              {#each stations as station (station.stationuuid)}
+              {#each sortedStations as station (station.stationuuid)}
                   <option value={station.stationuuid}>{station.name}</option>
               {/each}
         </select>
       </div>
-      {/if}
+      {/if}-->
       </div>
     </div>
   </section>
@@ -297,7 +302,7 @@
       </div>
         <div class="sidepanel-content">
           <list>
-            {#each stations as station (station.stationuuid)}
+            {#each sortedStations as station (station.stationuuid)}
               <li class="button" style="margin-bottom: 8px; width: 90%; justify-content: space-between; display: flex; align-items: center;">
                 <button 
                   class="button" 
@@ -618,6 +623,5 @@
 	}
 
 </style>
-
 
 
